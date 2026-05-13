@@ -17,7 +17,7 @@ export default function Home() {
           让AI写出的论文 <span className="text-[var(--accent)]">不像AI写的</span>
         </h1>
         <p className="text-lg text-[var(--muted)] mb-3">
-          内置学术降AIGC策略，单次提交≤2000字，自动生成Word文档与降AI味分析报告。
+          内置学术降AIGC策略，单次提交≤5万字，自动生成Word文档与降AI味分析报告。
         </p>
         <p className="text-3xl font-bold my-8">
           ¥9.9 <span className="text-base font-normal text-[var(--muted)]">/次 · 按次购买，用多少买多少</span>

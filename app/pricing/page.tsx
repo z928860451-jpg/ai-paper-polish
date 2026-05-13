@@ -29,7 +29,7 @@ export default function Pricing() {
   return (
     <main className="min-h-screen p-8 max-w-3xl mx-auto">
       <h1 className="text-3xl font-bold mb-2">购买使用次数</h1>
-      <p className="text-[var(--muted)] mb-10">¥9.9/次，单次提交最多2000字，含改写稿+分析报告下载。次数不过期。</p>
+      <p className="text-[var(--muted)] mb-10">¥9.9/次，单次提交最多5万字，含改写稿+分析报告下载。次数不过期。</p>
 
       <div className="bg-[var(--card)] rounded-xl p-8">
         <div className="flex items-center justify-between mb-6">

@@ -105,7 +105,7 @@ export default function Dashboard() {
       <div className="grid md:grid-cols-2 gap-6">
         <div>
           <div className="flex items-center justify-between mb-2">
-            <label className="text-sm text-[var(--muted)]">原文（粘贴待润色文本，单次≤2000字）</label>
+            <label className="text-sm text-[var(--muted)]">原文（粘贴待润色文本，单次≤5万字）</label>
             <span className="text-xs text-[var(--muted)]">{charCount}字</span>
           </div>
           <textarea

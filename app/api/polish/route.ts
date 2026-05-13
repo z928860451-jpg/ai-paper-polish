@@ -5,9 +5,9 @@ import { getCurrentUser } from "@/lib/auth";
 import { buildReport } from "@/lib/report";
 
 export const runtime = "nodejs";
-// Vercel 免费档函数最大 60 秒；按"单次≤2000字"设计，flash 大约 15-30 秒能跑完
-// 如果未来升 Pro 档可以放到 300，对应解禁单次 5 万字
-export const maxDuration = 60;
+// Render.com 是完整Node服务器环境，不像Serverless有超时限制
+// 长文5万字约需3-5分钟（V4-flash 并发3段）
+export const maxDuration = 300;
 
 export async function POST(req: NextRequest) {
   const user = getCurrentUser();
@@ -21,8 +21,8 @@ export async function POST(req: NextRequest) {
   if (trimmed.length < 50) {
     return NextResponse.json({ error: "文本太短，请至少粘贴50字" }, { status: 400 });
   }
-  if (trimmed.length > 2000) {
-    return NextResponse.json({ error: "单次处理不超过2000字，长文请分段提交（升级Pro档可放开到5万字）" }, { status: 400 });
+  if (trimmed.length > 50000) {
+    return NextResponse.json({ error: "单次处理不超过5万字，请分段提交" }, { status: 400 });
   }
 
   // 单次原子扣减 + 失败回滚语义：
