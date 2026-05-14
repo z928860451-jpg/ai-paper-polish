@@ -75,12 +75,12 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: redeemResult.error }, { status: 400 });
   }
 
-  // 创建任务记录（无userId）
+  // 创建任务记录（免登录，不关联用户）
   const job = await prisma.job.create({
     data: {
-      userId: "anonymous",
       inputText: trimmedText,
       charsInput: trimmedText.length,
+      codeUsed: trimmedCode,
       status: "processing",
     },
   });

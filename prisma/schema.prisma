@@ -1,7 +1,8 @@
 // Prisma schema：用户 + 使用次数 + 订单 + 兑换码 + 任务记录
 // 部署到 Vercel 必须用远程 Postgres（Neon 推荐），SQLite 在 Serverless 上文件系统是只读的
 generator client {
-  provider = "prisma-client-js"
+  provider      = "prisma-client-js"
+  binaryTargets = ["native", "rhel-openssl-1.1.x"]
 }
 
 datasource db {
@@ -49,14 +50,15 @@ model RedeemCode {
 
 model Job {
   id           String   @id @default(cuid())
-  userId       String
+  userId       String?  // 可选，免登录模式下为null
   inputText    String   @db.Text  // 论文原文，可能上万字
   outputText   String?  @db.Text  // 改写后正文
   reportJson   String?  @db.Text  // 降AI味分析报告（JSON字符串）
   charsInput   Int      @default(0)
   charsOutput  Int      @default(0)
   status       String   @default("processing")
+  codeUsed     String?  // 使用的兑换码
   createdAt    DateTime @default(now())
 
-  user         User     @relation(fields: [userId], references: [id])
+  user         User?    @relation(fields: [userId], references: [id])
 }
