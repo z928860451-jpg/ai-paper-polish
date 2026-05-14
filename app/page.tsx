@@ -6,9 +6,8 @@ export default function Home() {
       <nav className="flex items-center justify-between px-8 py-5 border-b border-white/5">
         <div className="text-xl font-bold tracking-wide">笔润 BiRun</div>
         <div className="flex gap-6 text-sm text-[var(--muted)]">
-          <Link href="/pricing" className="hover:text-white">定价</Link>
-          <Link href="/dashboard" className="hover:text-white">控制台</Link>
-          <Link href="/login" className="px-4 py-1.5 rounded-md bg-[var(--accent)] text-white">登录</Link>
+          <Link href="/buy" className="hover:text-white">购买</Link>
+          <Link href="/dashboard" className="px-4 py-1.5 rounded-md bg-[var(--accent)] text-white">开始使用</Link>
         </div>
       </nav>
 

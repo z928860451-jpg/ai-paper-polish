@@ -1,141 +1,179 @@
 "use client";
-import { useEffect, useState } from "react";
-
-interface UserInfo { email: string; uses: number; }
+import { useState, useRef } from "react";
 
 interface Report {
   inputChars: number;
   outputChars: number;
-  before: { aiWordTotal: number; aiWordHits: { word: string; count: number }[]; sentenceStats: any; emDashCount: number };
-  after: { aiWordTotal: number; aiWordHits: { word: string; count: number }[]; sentenceStats: any; emDashCount: number };
+  before: { aiWordTotal: number; aiWordHits: { word: string; count: number }[] };
+  after: { aiWordTotal: number; aiWordHits: { word: string; count: number }[] };
   improvement: { aiWordReduced: number; aiWordReducedPct: number; sentenceVarianceGain: number; similarityVs2gram: number; estimatedDuplicationDrop: number };
   conclusion: string;
 }
 
 export default function Dashboard() {
-  const [user, setUser] = useState<UserInfo | null>(null);
   const [text, setText] = useState("");
+  const [code, setCode] = useState("");
   const [output, setOutput] = useState("");
   const [report, setReport] = useState<Report | null>(null);
-  const [jobId, setJobId] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
-  const [code, setCode] = useState("");
-  const [redeemMsg, setRedeemMsg] = useState("");
+  const [fileName, setFileName] = useState("");
+  const [outputDocx, setOutputDocx] = useState("");
+  const [reportDocx, setReportDocx] = useState("");
+  const fileRef = useRef<HTMLInputElement>(null);
 
   const charCount = text.replace(/\s/g, "").length;
 
-  function refreshUser() {
-    fetch("/api/auth/me").then((r) => r.json()).then((d) => setUser(d.user));
+  function handleFile(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (!file.name.match(/\.(doc|docx)$/i)) {
+      setError("只支持 .doc/.docx 格式");
+      return;
+    }
+    setFileName(file.name);
+    setError("");
+    // 读取文件后会在提交时用FormData发送
   }
-  useEffect(refreshUser, []);
 
   async function submit() {
-    if (!text.trim()) return;
+    if (!code.trim()) { setError("请输入兑换码"); return; }
+    if (!text.trim() && !fileRef.current?.files?.[0]) { setError("请粘贴文本或上传文件"); return; }
+
     setLoading(true);
     setError("");
     setOutput("");
     setReport(null);
+    setOutputDocx("");
+    setReportDocx("");
+
     try {
-      const r = await fetch("/api/polish", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ text }),
-      });
-      const d = await r.json();
-      if (!r.ok) {
-        if (r.status === 401) { location.href = "/login"; return; }
+      let resp: Response;
+
+      if (fileRef.current?.files?.[0]) {
+        // 文件上传模式
+        const fd = new FormData();
+        fd.append("code", code.trim());
+        fd.append("file", fileRef.current.files[0]);
+        if (text.trim()) fd.append("text", text.trim()); // 文本也带上作为备用
+        resp = await fetch("/api/polish", { method: "POST", body: fd });
+      } else {
+        // 纯文本模式
+        resp = await fetch("/api/polish", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ text: text.trim(), code: code.trim() }),
+        });
+      }
+
+      const d = await resp.json();
+      if (!resp.ok) {
         setError(d.error || "处理失败");
         return;
       }
       setOutput(d.output);
       setReport(d.report);
-      setJobId(d.jobId);
-      refreshUser();
+      setOutputDocx(d.outputDocxBase64 || "");
+      setReportDocx(d.reportDocxBase64 || "");
     } catch (e: any) {
-      setError(e.message);
+      setError(e.message || "网络错误");
     } finally {
       setLoading(false);
     }
   }
 
-  async function redeem() {
-    if (!code.trim()) return;
-    setRedeemMsg("");
-    const r = await fetch("/api/redeem", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ code }),
-    });
-    const d = await r.json();
-    if (!r.ok) { setRedeemMsg(d.error || "兑换失败"); return; }
-    setRedeemMsg("✓ 兑换成功，已增加1次使用机会");
-    setCode("");
-    refreshUser();
+  function downloadBase64(base64: string, filename: string) {
+    const bin = atob(base64);
+    const arr = new Uint8Array(bin.length);
+    for (let i = 0; i < bin.length; i++) arr[i] = bin.charCodeAt(i);
+    const blob = new Blob([arr], { type: "application/vnd.openxmlformats-officedocument.wordprocessingml.document" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = filename;
+    a.click();
+    URL.revokeObjectURL(url);
   }
 
   return (
-    <main className="min-h-screen p-8">
-      <header className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-bold">笔润 · 控制台</h1>
-        {user ? (
-          <div className="text-sm text-[var(--muted)] flex items-center gap-3">
-            <span>{user.email}</span>
-            <span>剩余次数 <span className="text-white font-semibold">{user.uses}</span></span>
-            <a href="/pricing" className="px-3 py-1.5 rounded bg-[var(--accent)] text-white">购买</a>
-          </div>
-        ) : (
-          <a href="/login" className="text-[var(--accent)]">登录</a>
-        )}
+    <main className="min-h-screen p-6 md:p-8 max-w-6xl mx-auto">
+      <header className="flex items-center justify-between mb-8">
+        <h1 className="text-2xl font-bold">笔润 · 降AI味工作台</h1>
+        <a href="/buy" className="text-sm text-[var(--accent)]">没有兑换码？去购买</a>
       </header>
 
-      {/* 兑换码入口 */}
-      <div className="bg-[var(--card)] rounded-lg p-4 mb-6 flex items-center gap-3">
-        <span className="text-sm text-[var(--muted)]">咸鱼下单的用户：输入兑换码</span>
-        <input
-          value={code}
-          onChange={(e) => setCode(e.target.value)}
-          placeholder="BR-XXXX-XXXX-XXXX"
-          className="flex-1 max-w-xs px-3 py-1.5 bg-[var(--bg)] rounded border border-white/10 text-sm outline-none focus:border-[var(--accent)]"
-        />
-        <button onClick={redeem} className="px-4 py-1.5 rounded bg-green-600 text-white text-sm">兑换</button>
-        {redeemMsg && <span className="text-xs text-green-400">{redeemMsg}</span>}
+      {/* 兑换码输入 */}
+      <div className="bg-[var(--card)] rounded-lg p-4 mb-6">
+        <div className="flex items-center gap-3 flex-wrap">
+          <label className="text-sm font-medium">兑换码</label>
+          <input
+            value={code}
+            onChange={(e) => setCode(e.target.value)}
+            placeholder="BR-XXXX-XXXX-XXXX"
+            className="flex-1 min-w-[260px] px-3 py-2 bg-[var(--bg)] rounded border border-white/10 text-sm font-mono outline-none focus:border-[var(--accent)]"
+          />
+          <span className="text-xs text-[var(--muted)]">一码一用，提交后自动核销</span>
+        </div>
       </div>
 
       <div className="grid md:grid-cols-2 gap-6">
+        {/* 左侧：输入 */}
         <div>
           <div className="flex items-center justify-between mb-2">
-            <label className="text-sm text-[var(--muted)]">原文（粘贴待润色文本，单次≤5万字）</label>
+            <label className="text-sm text-[var(--muted)]">输入论文文本（粘贴或上传）</label>
             <span className="text-xs text-[var(--muted)]">{charCount}字</span>
           </div>
           <textarea
             value={text}
             onChange={(e) => setText(e.target.value)}
-            className="w-full h-[440px] p-4 bg-[var(--card)] rounded-lg border border-white/10 text-sm leading-relaxed resize-none outline-none focus:border-[var(--accent)]"
-            placeholder="把AI生成的论文段落粘到这里。单次扣1次使用机会，无关字数。"
+            className="w-full h-[360px] p-4 bg-[var(--card)] rounded-lg border border-white/10 text-sm leading-relaxed resize-none outline-none focus:border-[var(--accent)]"
+            placeholder="粘贴AI生成的论文段落...&#10;&#10;或者点下方按钮上传Word文件"
           />
+
+          {/* 上传按钮 */}
+          <div className="mt-3 flex items-center gap-3">
+            <label className="cursor-pointer px-4 py-2 rounded bg-[var(--card)] border border-white/10 text-sm hover:border-[var(--accent)] transition">
+              📎 上传 .doc/.docx 文件
+              <input
+                ref={fileRef}
+                type="file"
+                accept=".doc,.docx"
+                onChange={handleFile}
+                className="hidden"
+              />
+            </label>
+            {fileName && <span className="text-xs text-green-400">已选：{fileName}</span>}
+          </div>
+
           <button
             onClick={submit}
-            disabled={loading || !text.trim() || (user?.uses ?? 0) < 1}
+            disabled={loading}
             className="mt-4 w-full py-3 rounded-lg bg-[var(--accent)] text-white font-medium disabled:opacity-50"
           >
-            {loading ? "改写中... 1-3分钟" : (user?.uses ?? 0) < 1 ? "次数不足，请购买或兑换" : "开始降AI味（消耗1次）"}
+            {loading ? "AI改写中... 约30-60秒" : "开始降AI味（消耗1个兑换码）"}
           </button>
           {error && <div className="mt-3 text-red-400 text-sm">{error}</div>}
         </div>
 
+        {/* 右侧：输出 */}
         <div>
           <div className="flex items-center justify-between mb-2">
-            <label className="text-sm text-[var(--muted)]">改写后</label>
-            {jobId && (
+            <label className="text-sm text-[var(--muted)]">改写结果</label>
+            {outputDocx && (
               <div className="flex gap-2">
-                <a href={`/api/download/${jobId}?type=output`} className="text-xs px-2 py-1 rounded bg-[var(--accent)] text-white">下载Word</a>
-                <a href={`/api/download/${jobId}?type=report`} className="text-xs px-2 py-1 rounded bg-purple-600 text-white">下载报告</a>
+                <button
+                  onClick={() => downloadBase64(outputDocx, "降AI味改写稿.docx")}
+                  className="text-xs px-3 py-1 rounded bg-[var(--accent)] text-white"
+                >📥 下载改写稿</button>
+                <button
+                  onClick={() => downloadBase64(reportDocx, "降AI味分析报告.docx")}
+                  className="text-xs px-3 py-1 rounded bg-purple-600 text-white"
+                >📊 下载报告</button>
               </div>
             )}
           </div>
-          <div className="w-full h-[440px] p-4 bg-[var(--card)] rounded-lg border border-white/10 text-sm leading-relaxed overflow-auto whitespace-pre-wrap">
-            {output || <span className="text-[var(--muted)]">改写结果会显示在这里</span>}
+          <div className="w-full h-[360px] p-4 bg-[var(--card)] rounded-lg border border-white/10 text-sm leading-relaxed overflow-auto whitespace-pre-wrap">
+            {output || <span className="text-[var(--muted)]">改写结果会显示在这里，同时生成Word文件供下载</span>}
           </div>
         </div>
       </div>
@@ -143,7 +181,15 @@ export default function Dashboard() {
       {/* 报告卡片 */}
       {report && (
         <div className="mt-8 bg-[var(--card)] rounded-lg p-6">
-          <h2 className="text-xl font-semibold mb-4">降AI味分析报告</h2>
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-xl font-semibold">降AI味分析报告</h2>
+            {reportDocx && (
+              <button
+                onClick={() => downloadBase64(reportDocx, "降AI味分析报告.docx")}
+                className="text-xs px-3 py-1 rounded bg-purple-600 text-white"
+              >📊 下载完整报告</button>
+            )}
+          </div>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-5">
             <Stat label="AI词减少" value={`${report.improvement.aiWordReduced}处`} sub={`-${report.improvement.aiWordReducedPct}%`} good />
             <Stat label="句长方差提升" value={`+${report.improvement.sentenceVarianceGain}`} sub="节奏更自然" good={report.improvement.sentenceVarianceGain > 0} />
