@@ -1,0 +1,28 @@
+{
+  "envId": "josh-d7gusldqf7be724dc",
+  "region": "ap-shanghai",
+  "functionRoot": "",
+  "functions": [
+    {
+      "name": "birun",
+      "isHttp": true,
+      "timeout": 120,
+      "memorySize": 512,
+      "runtime": "Nodejs20.19",
+      "installDependency": false,
+      "envVariables": {
+        "DATABASE_URL": "postgresql://neondb_owner:npg_Ic5FAuztPSx8@ep-old-smoke-aosg7qge.c-2.ap-southeast-1.aws.neon.tech/neondb?sslmode=require",
+        "DATABASE_URL_UNPOOLED": "postgresql://neondb_owner:npg_Ic5FAuztPSx8@ep-old-smoke-aosg7qge.c-2.ap-southeast-1.aws.neon.tech/neondb?sslmode=require",
+        "LLM_BASE_URL": "https://api.deepseek.com/v1",
+        "LLM_MODEL": "deepseek-v4-flash",
+        "LLM_MODEL_PRO": "deepseek-v4-pro",
+        "LLM_API_KEY": "sk-ef82f1998c3646c6ad29198b1da04d7b",
+        "JWT_SECRET": "birun-change-me-to-a-long-random-string-2026",
+        "ADMIN_SECRET": "birun-admin-2026-change-me",
+        "PRICE_PER_USE_FEN": "990",
+        "PORT": "9000",
+        "NODE_ENV": "production"
+      }
+    }
+  ]
+}
