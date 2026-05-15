@@ -8,3 +8,4 @@ prisma/dev.db*
 prisma/migrations
 .DS_Store
 .vercel
+cloudbaserc.json
