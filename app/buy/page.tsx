@@ -1,91 +1,149 @@
 "use client";
 import { useState } from "react";
+import Link from "next/link";
 
-// 半自动收款页：贴个人微信收款码 + 邮箱核单 + 客服联系
-// 适用场景：还没拿到代付平台商户号、想0门槛先把生意跑起来
 export default function BuyPage() {
-  const [step, setStep] = useState<1 | 2 | 3>(1);
-  const [orderEmail, setOrderEmail] = useState("");
-  const [submitted, setSubmitted] = useState(false);
+  const [tab, setTab] = useState<"wechat" | "xianyu">("wechat");
 
   return (
-    <main className="min-h-screen p-8 max-w-3xl mx-auto">
-      <h1 className="text-3xl font-bold mb-2">购买使用次数 · 半自动版</h1>
-      <p className="text-[var(--muted)] mb-8">单次 ¥9.9，付款后5-30分钟内人工发码到你的注册邮箱。</p>
-
-      <div className="flex gap-2 mb-8">
-        {[1, 2, 3].map((n) => (
-          <div
-            key={n}
-            className={`flex-1 h-1.5 rounded-full ${step >= n ? "bg-[var(--accent)]" : "bg-white/10"}`}
-          />
-        ))}
-      </div>
-
-      {step === 1 && (
-        <div className="bg-[var(--card)] rounded-xl p-8">
-          <h2 className="text-xl font-semibold mb-4">第 1 步：扫码付款</h2>
-          <p className="text-[var(--muted)] mb-6">扫下方微信收款码，转账金额 <span className="text-white font-bold">¥9.9</span>（每多购一次加 9.9）。<br/>
-            <span className="text-amber-400 text-sm">⚠️ 付款时<b>务必</b>在备注里填你注册时用的邮箱，否则我们没法关联到你的账号。</span>
-          </p>
-          <div className="flex flex-col items-center bg-white rounded-lg p-6 mb-6">
-            <img src="/pay/wechat-qr.jpg" alt="微信收款码" className="w-72 h-auto" />
-          </div>
-          <button onClick={() => setStep(2)} className="w-full py-3 rounded-lg bg-[var(--accent)] text-white font-medium">
-            我已付款，下一步
-          </button>
+    <main className="min-h-screen bg-[var(--bg)]">
+      {/* 顶栏 */}
+      <nav className="glass-card border-b border-[var(--border)] sticky top-0 z-40">
+        <div className="max-w-4xl mx-auto flex items-center justify-between px-6 py-3">
+          <Link href="/" className="flex items-center gap-2">
+            <div className="w-7 h-7 rounded-md btn-primary flex items-center justify-center text-white text-xs font-bold">笔</div>
+            <span className="font-bold">笔润 BiRun</span>
+          </Link>
+          <Link href="/dashboard" className="text-xs text-[var(--accent-light)]">已有码？去使用</Link>
         </div>
-      )}
+      </nav>
 
-      {step === 2 && (
-        <div className="bg-[var(--card)] rounded-xl p-8">
-          <h2 className="text-xl font-semibold mb-4">第 2 步：登记订单</h2>
-          <p className="text-[var(--muted)] mb-4">填你的注册邮箱，我们会用它定位账号并直接给你加次数 / 发兑换码：</p>
-          <input
-            type="email"
-            value={orderEmail}
-            onChange={(e) => setOrderEmail(e.target.value)}
-            placeholder="你注册账号用的邮箱"
-            className="w-full p-3 mb-6 bg-[var(--bg)] rounded border border-white/10 outline-none focus:border-[var(--accent)]"
-          />
-          <p className="text-sm text-[var(--muted)] mb-3">
-            付款截图（可选，加快核单）：把微信付款成功页截图，加客服微信发过来。
-          </p>
+      <div className="max-w-2xl mx-auto p-6 pt-10">
+        <h1 className="text-3xl font-bold mb-2">获取兑换码</h1>
+        <p className="text-[var(--text-secondary)] mb-8">¥9.9/次 · 一码一用 · 单次最多处理5万字 · 交付改写稿+分析报告</p>
+
+        {/* Tab切换 */}
+        <div className="flex gap-2 mb-8 p-1 bg-[var(--card)] rounded-xl">
           <button
-            onClick={() => {
-              if (!orderEmail.trim()) { alert("邮箱必填"); return; }
-              // 把订单信息存到 localStorage 备查（真生产可以打个POST到/api/manual-order备案）
-              const order = { email: orderEmail, time: new Date().toISOString() };
-              localStorage.setItem("birun_manual_order_" + Date.now(), JSON.stringify(order));
-              setSubmitted(true);
-              setStep(3);
-            }}
-            className="w-full py-3 rounded-lg bg-[var(--accent)] text-white font-medium"
-          >
-            提交登记
-          </button>
+            onClick={() => setTab("wechat")}
+            className={`flex-1 py-3 rounded-lg text-sm font-medium transition ${tab === "wechat" ? "btn-primary text-white" : "text-[var(--text-secondary)] hover:text-white"}`}
+          >💬 微信付款</button>
+          <button
+            onClick={() => setTab("xianyu")}
+            className={`flex-1 py-3 rounded-lg text-sm font-medium transition ${tab === "xianyu" ? "btn-primary text-white" : "text-[var(--text-secondary)] hover:text-white"}`}
+          >🐟 咸鱼下单（自动发码）</button>
         </div>
-      )}
 
-      {step === 3 && (
-        <div className="bg-[var(--card)] rounded-xl p-8 text-center">
-          <div className="text-5xl mb-4">📬</div>
-          <h2 className="text-xl font-semibold mb-3">登记完成，等通知</h2>
-          <p className="text-[var(--muted)] mb-6 leading-relaxed">
-            我们看到付款后会在 5-30 分钟内（夜间次日 9 点起）：<br/>
-            ① 在你的账号上<b className="text-white">直接加次数</b>，登录刷新即可使用<br/>
-            ② 或发兑换码到 <b className="text-white">{orderEmail}</b>
-          </p>
-          <div className="text-sm text-[var(--muted)] mb-6 bg-[var(--bg)] rounded p-4 leading-relaxed">
-            <b className="text-white">急用？</b>加客服微信 <span className="text-[var(--accent)]">birun-helper</span><br/>
-            发付款截图 + 邮箱，2分钟内秒回
+        {/* 微信付款 */}
+        {tab === "wechat" && (
+          <div className="glass-card rounded-2xl p-8">
+            <h2 className="text-xl font-semibold mb-6 flex items-center gap-2">
+              <span className="w-2 h-2 rounded-full bg-green-400"></span>
+              微信付款流程
+            </h2>
+
+            <div className="space-y-6">
+              {/* 步骤1 */}
+              <div className="flex gap-4">
+                <div className="w-8 h-8 rounded-full bg-[var(--accent)]/20 text-[var(--accent-light)] flex items-center justify-center text-sm font-bold shrink-0">1</div>
+                <div>
+                  <div className="font-medium mb-2">扫码付款 ¥9.9</div>
+                  <div className="bg-white rounded-xl p-4 inline-block">
+                    <img src="/pay/wechat-qr.jpg" alt="微信收款码" className="w-48 h-auto"/>
+                  </div>
+                </div>
+              </div>
+
+              {/* 步骤2 */}
+              <div className="flex gap-4">
+                <div className="w-8 h-8 rounded-full bg-[var(--accent)]/20 text-[var(--accent-light)] flex items-center justify-center text-sm font-bold shrink-0">2</div>
+                <div>
+                  <div className="font-medium mb-2">付款截图发给客服微信</div>
+                  <div className="bg-[var(--bg)] rounded-xl p-4 border border-[var(--border)]">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-full bg-green-500/20 flex items-center justify-center text-lg">💬</div>
+                      <div>
+                        <div className="font-mono text-[var(--accent-light)] text-lg">biubiuji001</div>
+                        <div className="text-xs text-[var(--text-secondary)]">添加客服微信，发送付款截图</div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* 步骤3 */}
+              <div className="flex gap-4">
+                <div className="w-8 h-8 rounded-full bg-[var(--accent)]/20 text-[var(--accent-light)] flex items-center justify-center text-sm font-bold shrink-0">3</div>
+                <div>
+                  <div className="font-medium mb-2">收到兑换码</div>
+                  <p className="text-sm text-[var(--text-secondary)]">
+                    客服确认付款后，5-30分钟内通过微信发送兑换码（格式：BR-XXXX-XXXX-XXXX）。
+                    <br/>夜间22:00-9:00的订单次日上午处理。
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <div className="mt-8 p-4 rounded-xl bg-[var(--warning)]/10 border border-[var(--warning)]/20">
+              <p className="text-sm text-[var(--warning)]">
+                <strong>提示：</strong>付款时无需备注，直接扫码转账9.9元即可。截图发给客服微信 <strong>biubiuji001</strong> 后等待发码。
+              </p>
+            </div>
           </div>
-          <a href="/dashboard" className="inline-block px-6 py-2 rounded bg-[var(--accent)] text-white">回控制台</a>
-        </div>
-      )}
+        )}
 
-      <div className="mt-8 text-xs text-[var(--muted)] text-center leading-relaxed">
-        我们也支持咸鱼下单：搜索店铺<b className="text-white">「笔润降AI味」</b>，下单后会收到兑换码，回 <a href="/dashboard" className="text-[var(--accent)]">控制台</a> 输入即可。
+        {/* 咸鱼下单 */}
+        {tab === "xianyu" && (
+          <div className="glass-card rounded-2xl p-8">
+            <h2 className="text-xl font-semibold mb-6 flex items-center gap-2">
+              <span className="w-2 h-2 rounded-full bg-yellow-400"></span>
+              咸鱼下单（自动发码）
+            </h2>
+
+            <div className="space-y-6">
+              <div className="flex gap-4">
+                <div className="w-8 h-8 rounded-full bg-[var(--accent)]/20 text-[var(--accent-light)] flex items-center justify-center text-sm font-bold shrink-0">1</div>
+                <div>
+                  <div className="font-medium mb-2">搜索店铺</div>
+                  <p className="text-sm text-[var(--text-secondary)]">打开闲鱼APP，搜索 <span className="text-white font-mono">「笔润降AI味」</span> 或 <span className="text-white font-mono">「论文降AIGC」</span></p>
+                </div>
+              </div>
+
+              <div className="flex gap-4">
+                <div className="w-8 h-8 rounded-full bg-[var(--accent)]/20 text-[var(--accent-light)] flex items-center justify-center text-sm font-bold shrink-0">2</div>
+                <div>
+                  <div className="font-medium mb-2">下单付款</div>
+                  <p className="text-sm text-[var(--text-secondary)]">选择「降AI味兑换码 · 1次」商品，按闲鱼正常流程付款</p>
+                </div>
+              </div>
+
+              <div className="flex gap-4">
+                <div className="w-8 h-8 rounded-full bg-green-500/20 text-green-400 flex items-center justify-center text-sm font-bold shrink-0">✓</div>
+                <div>
+                  <div className="font-medium mb-2 text-green-400">自动收到兑换码</div>
+                  <p className="text-sm text-[var(--text-secondary)]">
+                    付款成功后，系统自动通过闲鱼消息发送兑换码。<br/>
+                    格式：<span className="font-mono text-[var(--accent-light)]">BR-XXXX-XXXX-XXXX</span>
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <div className="mt-8 p-4 rounded-xl bg-green-500/10 border border-green-500/20">
+              <p className="text-sm text-green-300">
+                <strong>推荐：</strong>咸鱼下单全程自动化，付款后秒收码，无需等待人工处理。且有闲鱼平台担保，不满意可退。
+              </p>
+            </div>
+          </div>
+        )}
+
+        {/* 拿到码之后 */}
+        <div className="mt-8 glass-card rounded-2xl p-6 text-center">
+          <p className="text-sm text-[var(--text-secondary)] mb-3">拿到兑换码后</p>
+          <Link href="/dashboard" className="btn-primary inline-block px-8 py-3 rounded-xl text-white font-semibold">
+            去工作台使用 →
+          </Link>
+        </div>
       </div>
     </main>
   );
